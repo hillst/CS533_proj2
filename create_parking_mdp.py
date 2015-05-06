@@ -1,6 +1,65 @@
 #!/usr/bin/env python
 import sys
 
+class State():
+    row = None
+    spot_num = None
+    next = None
+    previous = None
+    distance_from_start = None
+    occupied = None
+    handicapped = None
+
+    """
+    row - 0 or 1 for left row or right row
+    spot_num - goes from zero to max_spot, where as max_spot is far from the store and zero is close.
+    
+    """
+    def __init__(self, row, spot_num, next, previous, distance_from_start, occupied, max_spot, p_available, parked):
+        self.row = row
+        self.spot_num = spot_num
+        self.next = next
+        self.previous = previous
+        self.distance_from_start = distance_from_start
+        self.occupied = occupied
+        self.max_spot = max_spot
+        self.handicapped = (spot_num == 0)
+        self.p_available = p_available
+        self.parked = parked
+
+    """
+    0 is close to the store, max is far from the store, max_spot is the end of the store
+    rolls over too
+    """
+    def calc_distance(self):
+        self.distance_from_start = self.spot_num 
+
+    """
+    Returns a tuple of the next spot (row, spot_number)
+    """
+    def next_spot_index(self):
+        if self.spot_num == 0 and self.row == 0:
+            return 1, 0
+        if self.spot_num == self.max_spot and self.row == 1:
+            return 0, self.max_spot
+    
+    def print_transition_probabilities(self):
+        p_available = given_available * store_distance / (spots + 1)
+        if self.parked:
+            return self, "1.0" 
+            
+
+def describe_state(i, j, action):
+    if i % 4 == 0:
+        print "Position", i/4, "Unavailable, Not Parked"
+    if i % 4 == 1:
+        print "Position", i/4, "available, Not Parked"
+    if i % 4 == 2:
+        print "Position", i/4, "Unavailable, Parked"
+    if i % 4 == 3: 
+        print "Position", i/4, "Available, Parked"
+    
+
 def main():
     if len(sys.argv) < 8 or "-h" in sys.argv or "--help" in sys.argv:
         print_usage()
@@ -35,7 +94,7 @@ def main():
                         #store_distance = (i + 1) / 2
                     p_available = given_available * store_distance / (spots + 1)
                     #next spot  
-                    if j == i + 1 and store_distance == 1 or i == spots - 1 and j == 0:
+                    if i == spots - 1 and j == 0:
                         if s % 4 == 0:
                             print "%0.2f" % (1 - p_handicap),
                         if s % 4 == 1:
@@ -44,7 +103,15 @@ def main():
                             print "%0.2f" % 0.00,
                         elif s % 4 == 3:
                             print "%0.2f" % 0.00,
-                            
+                    elif j == i + 1 and store_distance == 1:
+                        if s % 4 == 0:
+                            print "%0.2f" % (1 - p_handicap),
+                        if s % 4 == 1:
+                            print "%0.2f" % p_handicap,
+                        elif s % 4 == 2:
+                            print "%0.2f" % 0.00,
+                        elif s % 4 == 3:
+                            print "%0.2f" % 0.00,
                     elif j == i + 1: 
                         #not empty and not parked
                         if s % 4 == 0:
@@ -58,8 +125,7 @@ def main():
                         #not empty and parked
                         elif s % 4 == 3:
                             print "%0.2f" % 0.00,
-
-                    elif i == spots - 1 and j == 0:
+                    elif j == 0 and i == spots + 1:
                         #not empty and not parked
                         if s % 4 == 0:
                             print "%0.2f" % (1 - p_available),
@@ -79,14 +145,13 @@ def main():
     #print park action
     for t in range(4):
         for i in range(spots * 2):
-            for s in range(4):
-        
+            for s in range(4): 
                 for j in range(spots * 2):
                     # we transition from the current unparked position to the parked position
-                    if i == j and ((s % 4 == 3 and t % 4 == 0) or (s % 4 == 2 and t % 4 == 1)):
+                    if i == j and ((t % 4 == 0 and s % 4 == 2) or (t % 4 == 1 and s % 4 == 3)):
                         print "%0.2f" % 1.0,
                     #already parked
-                    elif i == j and (s % 4 == 3 or s % 4 == 2):
+                    elif i == j and (s % 4 == 3 or s % 4 == 2 and s == t):
                         print "%0.2f" % 1.0,
                     #parking cannot put us in a non-parked state and it cannot move us
                     else:
